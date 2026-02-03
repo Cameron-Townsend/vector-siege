@@ -1,4 +1,7 @@
- class EventBus {
+/**
+         * MIGRATION: MOVE TO js/EventBus.js
+         */
+        class EventBus {
             constructor() { this.events = {}; }
             on(event, callback) {
                 if (!this.events[event]) this.events[event] = [];
