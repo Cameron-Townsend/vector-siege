@@ -3,14 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vector Siege | Phase 2.3: Mobile Integrity</title>
+    <title>Vector Siege | Phase 2.4: Gold Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- GITHUB MIGRATION: css/global.css -->
-    <link rel="stylesheet" href="css/global.css">
+    <!-- GITHUB MIGRATION: Link to your external stylesheet -->
+    <!-- When you split files, uncomment this line: -->
+    <!-- <link rel="stylesheet" href="css/global.css"> -->
 
     <style>
-        /* MIGRATION NOTE: Move all CSS to /css/global.css */
+        /* ==========================================================================
+           GITHUB MIGRATION INSTRUCTION:
+           Move all CSS rules below this line into a new file: /css/global.css
+           ========================================================================== */
+        
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
         :root {
             --neon-cyan: #00f3ff;
@@ -25,7 +30,6 @@
             font-family: 'JetBrains+Mono', monospace; 
             overflow: hidden; 
             touch-action: none;
-            /* MOBILE FIX: Use dynamic viewport height and fixed position to prevent scroll/bar hiding */
             height: 100dvh; 
             width: 100vw;
             position: fixed;
@@ -43,7 +47,7 @@
             display: block; 
             cursor: crosshair; 
             background: #000;
-            touch-action: none; /* Critical for preventing browser zoom/scroll */
+            touch-action: none; 
         }
 
         .segmented-bar { display: flex; gap: 3px; }
@@ -68,7 +72,7 @@
             transition: all 0.1s;
             user-select: none;
             cursor: pointer;
-            touch-action: none; /* Prevents double-tap zoom on buttons */
+            touch-action: none; 
             -webkit-tap-highlight-color: transparent;
         }
         .control-btn:active { background: rgba(0, 243, 255, 0.2); transform: scale(0.92); }
@@ -85,14 +89,54 @@
         .jam-flicker { animation: jamFlicker 0.15s infinite; }
         @keyframes jamFlicker { 0%, 100% { opacity: 1; color: #ff0000; } 50% { opacity: 0.3; } }
 
+        /* SETTINGS DRAWER */
+        #settings-drawer {
+            position: absolute;
+            top: 0; right: 0; bottom: 0;
+            width: 300px;
+            background: rgba(10, 10, 18, 0.95);
+            border-left: 1px solid var(--neon-cyan);
+            backdrop-filter: blur(10px);
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 200;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        #settings-drawer.open { transform: translateX(0); }
+
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--neon-cyan); margin-top: -6px; box-shadow: 0 0 10px var(--neon-cyan);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: rgba(255, 255, 255, 0.2); border-radius: 2px;
+        }
+
+        .toggle-switch {
+            position: relative; display: inline-block; width: 40px; height: 20px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--neon-cyan); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
         #debug-console {
             position: absolute; top: 100px; left: 20px; width: 220px;
             background: rgba(0, 0, 0, 0.9); border: 1px solid #0f0;
             font-size: 9px; color: #0f0; padding: 10px; z-index: 200;
             display: none; pointer-events: auto;
         }
-
-        /* NEW: Splash Screen Styles */
+        
         #splash-screen {
             position: fixed; inset: 0; z-index: 50;
             background: #050508;
@@ -100,26 +144,44 @@
             align-items: center; justify-content: center;
         }
         .boot-btn {
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-            padding: 10px 20px;
-            margin: 10px;
-            font-family: 'JetBrains+Mono', monospace;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            background: transparent;
-            transition: all 0.2s;
-            cursor: pointer;
+            border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 10px 20px; margin: 10px; font-family: 'JetBrains+Mono', monospace; text-transform: uppercase; letter-spacing: 2px; background: transparent; transition: all 0.2s; cursor: pointer;
         }
-        .boot-btn:hover {
-            background: var(--neon-cyan);
-            color: black;
-            box-shadow: 0 0 15px var(--neon-cyan);
-        }
+        .boot-btn:hover { background: var(--neon-cyan); color: black; box-shadow: 0 0 15px var(--neon-cyan); }
     </style>
 </head>
 <body>
     <div class="crt-overlay"></div>
+
+    <!-- SETTINGS DRAWER -->
+    <div id="settings-drawer">
+        <div class="text-xl font-bold neon-text-cyan border-b border-white/20 pb-2 mb-4">SYSTEM CONFIG</div>
+        
+        <div class="space-y-2">
+            <div class="flex justify-between text-xs font-bold tracking-widest">
+                <span>AUDIO GAIN</span>
+                <span id="volume-display">10%</span>
+            </div>
+            <input type="range" id="volume-slider" min="0" max="100" value="10">
+        </div>
+
+        <div class="flex justify-between items-center mt-4">
+            <span class="text-xs font-bold tracking-widest">MUSIC FEED</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="music-toggle" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="flex justify-between items-center mt-4">
+            <span class="text-xs font-bold tracking-widest opacity-70">REDUCE FLASH</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="photosensitive-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <button id="close-settings" class="mt-auto boot-btn text-xs w-full">CLOSE TERMINAL</button>
+    </div>
 
     <!-- SPLASH SCREEN -->
     <div id="splash-screen">
@@ -134,9 +196,9 @@
         </div>
     </div>
 
-    <!-- TACTICAL HEADER (Tightened Padding) -->
+    <!-- TACTICAL HEADER -->
     <header class="w-full p-1 sm:p-2 flex justify-between items-start bg-black/40 border-b border-cyan-900/50 z-10 backdrop-blur-sm shrink-0">
-        <!-- Left: Hull Telemetry -->
+        <!-- Left: Hull -->
         <div class="space-y-1 w-fit max-w-[180px] sm:max-w-[280px]">
             <div class="flex justify-between text-[11px] sm:text-[13px] uppercase tracking-widest font-bold mb-0.5">
                 <span class="neon-text-cyan">Hull Integrity</span>
@@ -151,18 +213,27 @@
             </div>
         </div>
 
-        <!-- Center: Message Hub -->
-        <div class="flex-1 text-center px-2 overflow-hidden">
+        <!-- Center: Status -->
+        <div class="flex-1 text-center px-2 overflow-hidden relative">
             <div id="status-alert" class="text-[11px] sm:text-[13px] font-bold tracking-[0.2em] opacity-80 uppercase mb-0 truncate">Systems: Standby</div>
             <div id="countdown" class="text-2xl sm:text-4xl font-bold tracking-tighter neon-text-magenta leading-none mb-1 whitespace-nowrap">AWAITING INPUT</div>
             <div id="current-strata" class="text-[10px] sm:text-[12px] neon-text-cyan font-bold tracking-widest uppercase">Strata: Upper</div>
         </div>
 
-        <!-- Right: Heat Telemetry -->
+        <!-- Right: Heat & Settings -->
         <div class="space-y-1 w-fit max-w-[180px] sm:max-w-[280px] text-right">
-            <div class="flex justify-end items-center text-[11px] sm:text-[13px] uppercase tracking-widest font-bold mb-0.5">
-                <span id="heat-label">Weapon Temp</span>
-                <span id="heat-value" class="inline-block text-right min-w-[50px] ml-4">0%</span>
+            <div class="flex justify-end items-center mb-0.5">
+                <!-- Settings Button -->
+                <button id="btn-settings" class="mr-3 opacity-70 hover:opacity-100 transition-opacity">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-white">
+                        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+                    </svg>
+                </button>
+                <div class="text-[11px] sm:text-[13px] uppercase tracking-widest font-bold">
+                    <span id="heat-label">Weapon Temp</span>
+                    <span id="heat-value" class="inline-block text-right min-w-[50px] ml-4">0%</span>
+                </div>
             </div>
             <div id="heat-bar" class="segmented-bar w-full flex-row-reverse">
                 <div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div>
@@ -192,9 +263,7 @@
         </div>
     </main>
 
-    <!-- FOOTER (Tightened Padding) -->
     <footer class="p-1 sm:p-2 flex justify-between items-center bg-black/60 border-t border-cyan-900/50 backdrop-blur-md z-10 shrink-0">
-        <!-- Left Cluster -->
         <div class="flex gap-2 sm:gap-3">
             <div class="control-btn" data-action="flip">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-cyan"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"/></svg>
@@ -206,36 +275,24 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-magenta"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8M8 12h8"></path></svg>
             </div>
         </div>
-        
-        <!-- Slots -->
         <div class="flex flex-col items-center gap-1 sm:gap-2">
-            <div class="flex gap-1 sm:gap-2">
-                <div class="slot-box border-cyan-500/30 text-cyan-300">W1</div>
-                <div class="slot-box">W2</div>
-                <div class="slot-box">W3</div>
-            </div>
-            <div class="flex gap-1 sm:gap-2">
-                <div class="slot-box border-magenta-500/30 text-magenta-300">I1</div>
-                <div class="slot-box">I2</div>
-                <div class="slot-box">I3</div>
-            </div>
+            <div class="flex gap-1 sm:gap-2"><div class="slot-box border-cyan-500/30 text-cyan-300">W1</div><div class="slot-box">W2</div><div class="slot-box">W3</div></div>
+            <div class="flex gap-1 sm:gap-2"><div class="slot-box border-magenta-500/30 text-magenta-300">I1</div><div class="slot-box">I2</div><div class="slot-box">I3</div></div>
         </div>
-
-        <!-- Right Cluster -->
         <div class="flex gap-2 sm:gap-3 flex-row-reverse">
-            <div class="control-btn" data-action="flip">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-cyan"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"/></svg>
-            </div>
-            <div class="control-btn" data-action="fire">
-                <div class="w-6 h-6 rounded-full border-2 border-cyan-400 flex items-center justify-center"><div class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_10px_cyan]"></div></div>
-            </div>
-            <div class="control-btn" data-action="laser">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-magenta"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8M8 12h8"></path></svg>
-            </div>
+            <div class="control-btn" data-action="flip"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-cyan"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"/></svg></div>
+            <div class="control-btn" data-action="fire"><div class="w-6 h-6 rounded-full border-2 border-cyan-400 flex items-center justify-center"><div class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_10px_cyan]"></div></div></div>
+            <div class="control-btn" data-action="laser"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-magenta"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8M8 12h8"></path></svg></div>
         </div>
     </footer>
 
-    <!-- GITHUB MIGRATION SCRIPTS -->
+    <!-- GITHUB MIGRATION INSTRUCTIONS:
+         1. Create a folder named 'js' in your repo.
+         2. Create the files listed below (Registry.js, EventBus.js, etc.).
+         3. Copy the code from each labeled block into its corresponding file.
+         4. Uncomment the script tags below and remove the internal <script> block.
+    -->
+    
     <!--
     <script src="js/Registry.js"></script>
     <script src="js/EventBus.js"></script>
@@ -243,54 +300,119 @@
     <script src="js/FX.js"></script>
     <script src="js/Entities.js"></script>
     <script src="js/Physics.js"></script>
+    <script src="js/Input.js"></script>
     <script src="js/Orchestrator.js"></script>
     <script src="js/main.js"></script>
     -->
 
     <script>
-        // MIGRATION: js/Registry.js
+        // ==========================================================================
+        // FILE: js/Registry.js
+        // ==========================================================================
         const EVENTS = {
             CORE: { INIT: 'CORE_INIT', START: 'CORE_START', STATE_CHANGE: 'CORE_STATE_CHANGE' },
             INPUT: { INTERACTION: 'INPUT_INTERACTION' },
             UI: { ACTION: 'UI_ACTION', UPDATE: 'UI_UPDATE' },
             PHYSICS: { COLLISION: 'PHYSICS_COLLISION', FLIP: 'PHYSICS_FLIP', HEAT: 'PHYSICS_HEAT', JAM: 'PHYSICS_JAM' },
-            SYSTEM: { SHIELD: 'SYSTEM_SHIELD', BUFF: 'SYSTEM_BUFF' },
+            SYSTEM: { SHIELD: 'SYSTEM_SHIELD', BUFF: 'SYSTEM_BUFF', SETTINGS: 'SYSTEM_SETTINGS' },
             FX: { SHATTER: 'FX_SHATTER', SHAKE: 'FX_SHAKE' }
         };
 
-        // MIGRATION: js/EventBus.js
+        // ==========================================================================
+        // FILE: js/EventBus.js
+        // ==========================================================================
         class EventBus {
             constructor() { this.events = {}; }
             on(e, c) { (this.events[e] = this.events[e] || []).push(c); }
             emit(e, p = {}) { if (this.events[e]) this.events[e].forEach(c => c(p)); }
         }
 
-        // MIGRATION: js/Audio.js
+        // ==========================================================================
+        // FILE: js/Audio.js
+        // ==========================================================================
         class AudioEngine {
             constructor(bus) {
                 this.bus = bus; this.ctx = null;
+                this.masterGain = null;
+                this.bgmGain = null;
+                this.musicEnabled = true;
+                this.volume = 0.1; // Default 10%
+                this.bgmBuffer = null;
+                this.bgmSource = null;
+                
                 this.bus.on(EVENTS.UI.ACTION, d => { 
                     if (d.type === 'fire') this.playShoot(); 
                     if (d.type === 'flip') this.playFlip(); 
                 });
                 this.bus.on(EVENTS.FX.SHATTER, d => this.playShatter());
+                this.bus.on(EVENTS.SYSTEM.SETTINGS, d => this.updateSettings(d));
             }
+            
             init() {
                 if (this.ctx) return;
                 try {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    const statusEl = document.getElementById('debug-audio-status');
-                    if (statusEl) statusEl.innerText = 'Active';
-                } catch(e) {}
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                    this.masterGain = this.ctx.createGain();
+                    this.bgmGain = this.ctx.createGain();
+                    
+                    this.masterGain.connect(this.ctx.destination);
+                    this.bgmGain.connect(this.masterGain);
+                    
+                    this.updateGain();
+                    this.loadMusic(1); // Try to load Track 1
+                } catch(e) { console.warn("Audio Init Failed", e); }
             }
+
+            async loadMusic(trackIndex) {
+                // Safety Rail: Don't crash if file missing
+                try {
+                    const response = await fetch(`bgmusic/Track ${trackIndex}.mp3`);
+                    if (!response.ok) throw new Error('Track not found');
+                    const arrayBuffer = await response.arrayBuffer();
+                    this.bgmBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+                    this.playBGM();
+                } catch (e) {
+                    console.log(`BGM Load Skipped: ${e.message}`);
+                }
+            }
+
+            playBGM() {
+                if (!this.bgmBuffer || !this.musicEnabled) return;
+                if (this.bgmSource) this.bgmSource.stop();
+                this.bgmSource = this.ctx.createBufferSource();
+                this.bgmSource.buffer = this.bgmBuffer;
+                this.bgmSource.loop = true;
+                this.bgmSource.connect(this.bgmGain);
+                this.bgmSource.start();
+            }
+
+            updateSettings(data) {
+                if (typeof data.volume !== 'undefined') this.volume = data.volume;
+                if (typeof data.music !== 'undefined') {
+                    this.musicEnabled = data.music;
+                    if (this.musicEnabled) {
+                        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+                        this.playBGM();
+                    } else {
+                        if (this.bgmSource) this.bgmSource.stop();
+                    }
+                }
+                this.updateGain();
+            }
+
+            updateGain() {
+                if(this.masterGain) this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
+            }
+
             playShoot() {
                 if (!this.ctx) return;
                 const o = this.ctx.createOscillator(), g = this.ctx.createGain();
                 o.type = 'square'; o.frequency.setValueAtTime(880, this.ctx.currentTime);
                 o.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.1);
-                g.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                g.gain.setValueAtTime(0.05 * (this.volume * 10), this.ctx.currentTime); // SFX scales with vol
                 g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
-                o.connect(g); g.connect(this.ctx.destination);
+                o.connect(g); g.connect(this.masterGain);
                 o.start(); o.stop(this.ctx.currentTime + 0.1);
             }
             playFlip() {
@@ -298,8 +420,8 @@
                 const o = this.ctx.createOscillator(), g = this.ctx.createGain();
                 o.type = 'sine'; o.frequency.setValueAtTime(220, this.ctx.currentTime);
                 o.frequency.linearRampToValueAtTime(440, this.ctx.currentTime + 0.05);
-                g.gain.setValueAtTime(0.02, this.ctx.currentTime);
-                o.connect(g); g.connect(this.ctx.destination);
+                g.gain.setValueAtTime(0.02 * (this.volume * 10), this.ctx.currentTime);
+                o.connect(g); g.connect(this.masterGain);
                 o.start(); o.stop(this.ctx.currentTime + 0.05);
             }
             playShatter() {
@@ -308,13 +430,15 @@
                 for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
                 const n = this.ctx.createBufferSource(); n.buffer = buffer;
                 const f = this.ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 2000;
-                const g = this.ctx.createGain(); g.gain.setValueAtTime(0.03, this.ctx.currentTime);
-                n.connect(f); f.connect(g); g.connect(this.ctx.destination);
+                const g = this.ctx.createGain(); g.gain.setValueAtTime(0.03 * (this.volume * 10), this.ctx.currentTime);
+                n.connect(f); f.connect(g); g.connect(this.masterGain);
                 n.start(); n.stop(this.ctx.currentTime + 0.1);
             }
         }
 
-        // MIGRATION: js/FX.js
+        // ==========================================================================
+        // FILE: js/FX.js
+        // ==========================================================================
         class ParticleSystem {
             constructor() { this.particles = []; }
             spawn(x, y, color, count = 15) {
@@ -334,7 +458,9 @@
             }
         }
 
-        // MIGRATION: js/Entities.js
+        // ==========================================================================
+        // FILE: js/Entities.js
+        // ==========================================================================
         class Entity {
             constructor(x, y, type) {
                 this.x = x; this.y = y; this.type = type;
@@ -378,7 +504,9 @@
             }
         }
 
-        // MIGRATION: js/Physics.js
+        // ==========================================================================
+        // FILE: js/Physics.js
+        // ==========================================================================
         class PhysicsEngine {
             constructor(bus) {
                 this.bus = bus; this.projectiles = []; this.lastH = 65; this.lastK = 15;
@@ -437,7 +565,9 @@
             }
         }
 
-        // MIGRATION: js/Input.js
+        // ==========================================================================
+        // FILE: js/Input.js
+        // ==========================================================================
         class InputTranslator {
             constructor(canvas, bus) {
                 this.canvas = canvas;
@@ -486,7 +616,9 @@
             }
         }
 
-        // MIGRATION: js/Orchestrator.js
+        // ==========================================================================
+        // FILE: js/Orchestrator.js
+        // ==========================================================================
         class Orchestrator {
             constructor(canvas, bus, physics, audio, particles) {
                 this.canvas = canvas; this.ctx = canvas.getContext('2d');
@@ -577,7 +709,9 @@
             }
         }
 
-        // MIGRATION: js/main.js
+        // ==========================================================================
+        // FILE: js/main.js
+        // ==========================================================================
         window.onload = () => {
             window.bus = new EventBus(); const canvas = document.getElementById('gameCanvas'), audio = new AudioEngine(window.bus);
             const particles = new ParticleSystem(), physics = new PhysicsEngine(window.bus);
@@ -594,6 +728,24 @@
                 };
                 b.addEventListener('touchstart', trigger, { passive: false });
                 b.addEventListener('mousedown', trigger); // Mouse fallback
+            });
+            
+            // Settings UI
+            document.getElementById('btn-settings').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('settings-drawer').classList.add('open');
+            });
+            document.getElementById('close-settings').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('settings-drawer').classList.remove('open');
+            });
+            document.getElementById('volume-slider').addEventListener('input', (e) => {
+                const val = e.target.value;
+                document.getElementById('volume-display').innerText = val + '%';
+                window.bus.emit(EVENTS.SYSTEM.SETTINGS, { volume: val / 100 });
+            });
+            document.getElementById('music-toggle').addEventListener('change', (e) => {
+                window.bus.emit(EVENTS.SYSTEM.SETTINGS, { music: e.target.checked });
             });
             
             // Splash Button
