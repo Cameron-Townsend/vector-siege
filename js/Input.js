@@ -1,4 +1,7 @@
-class InputTranslator {
+/**
+         * MIGRATION: MOVE TO js/Input.js
+         */
+        class InputTranslator {
             constructor(canvas, bus) {
                 this.canvas = canvas;
                 this.bus = bus;
@@ -13,8 +16,17 @@ class InputTranslator {
                     const logicY = 60 - (((clientY - rect.top) / rect.height) * 60);
                     this.bus.emit('INPUT_INTERACTION', { h: logicX, k: logicY });
                 };
+
+                // Track aiming position
                 this.canvas.addEventListener('mousemove', handleInteraction);
                 this.canvas.addEventListener('touchstart', handleInteraction);
                 this.canvas.addEventListener('touchmove', handleInteraction);
+
+                // MIGRATION ADDITION: Mouse Click to Fire on Canvas
+                this.canvas.addEventListener('mousedown', (e) => {
+                    if (e.button === 0) { // Only fire on primary (left) click
+                        this.bus.emit('UI_ACTION', { type: 'fire' });
+                    }
+                });
             }
-}
+        }
