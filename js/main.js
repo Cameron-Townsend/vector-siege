@@ -1,11 +1,17 @@
 window.onload = () => {
+           window.onload = () => {
             const bus = new EventBus();
             const canvas = document.getElementById('gameCanvas');
-            const engine = new Orchestrator(canvas, bus);
+            
+            // Physics Engine handles the heavy lifting
+            const physics = new PhysicsEngine(bus);
+            
+            const engine = new Orchestrator(canvas, bus, physics);
             const input = new InputTranslator(canvas, bus);
             const ui = new UIController(bus);
-            console.log("Vector Siege Phase 1.1 Initialized.");
-
+            
+            console.log("Vector Siege Phase 2 Initialized.");
+        };
             // Debug Keys
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'j') {
