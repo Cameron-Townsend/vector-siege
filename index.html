@@ -134,40 +134,40 @@
         </div>
     </div>
 
-    <!-- TACTICAL HEADER -->
-    <header class="w-full p-2 sm:p-4 flex justify-between items-start bg-black/40 border-b border-cyan-900/50 z-10 backdrop-blur-sm shrink-0">
+    <!-- TACTICAL HEADER (Tightened Padding) -->
+    <header class="w-full p-1 sm:p-2 flex justify-between items-start bg-black/40 border-b border-cyan-900/50 z-10 backdrop-blur-sm shrink-0">
         <!-- Left: Hull Telemetry -->
         <div class="space-y-1 w-fit max-w-[180px] sm:max-w-[280px]">
-            <div class="flex justify-between text-[11px] sm:text-[13px] uppercase tracking-widest font-bold mb-1">
+            <div class="flex justify-between text-[11px] sm:text-[13px] uppercase tracking-widest font-bold mb-0.5">
                 <span class="neon-text-cyan">Hull Integrity</span>
                 <span id="hp-value">5.0</span>
             </div>
             <div id="hull-bar" class="segmented-bar w-full">
                 <div class="segment active-hp"></div><div class="segment active-hp"></div><div class="segment active-hp"></div><div class="segment active-hp"></div><div class="segment active-hp"></div>
             </div>
-            <div class="flex gap-4 mt-2 font-bold uppercase tracking-tight">
+            <div class="flex gap-4 mt-1 font-bold uppercase tracking-tight">
                 <div class="text-[12px] sm:text-[14px] text-cyan-400">Wave: <span id="wave-num" class="text-white text-[13px] sm:text-[16px]">01</span></div>
                 <div class="text-[12px] sm:text-[14px] text-cyan-400">Points: <span id="points" class="text-white text-[13px] sm:text-[16px]">00000</span></div>
             </div>
         </div>
 
         <!-- Center: Message Hub -->
-        <div class="flex-1 text-center px-4 overflow-hidden">
-            <div id="status-alert" class="text-[11px] sm:text-[13px] font-bold tracking-[0.2em] opacity-80 uppercase mb-1 truncate">Systems: Standby</div>
+        <div class="flex-1 text-center px-2 overflow-hidden">
+            <div id="status-alert" class="text-[11px] sm:text-[13px] font-bold tracking-[0.2em] opacity-80 uppercase mb-0 truncate">Systems: Standby</div>
             <div id="countdown" class="text-2xl sm:text-4xl font-bold tracking-tighter neon-text-magenta leading-none mb-1 whitespace-nowrap">AWAITING INPUT</div>
             <div id="current-strata" class="text-[10px] sm:text-[12px] neon-text-cyan font-bold tracking-widest uppercase">Strata: Upper</div>
         </div>
 
         <!-- Right: Heat Telemetry -->
         <div class="space-y-1 w-fit max-w-[180px] sm:max-w-[280px] text-right">
-            <div class="flex justify-end items-center text-[11px] sm:text-[13px] uppercase tracking-widest font-bold mb-1">
+            <div class="flex justify-end items-center text-[11px] sm:text-[13px] uppercase tracking-widest font-bold mb-0.5">
                 <span id="heat-label">Weapon Temp</span>
                 <span id="heat-value" class="inline-block text-right min-w-[50px] ml-4">0%</span>
             </div>
             <div id="heat-bar" class="segmented-bar w-full flex-row-reverse">
                 <div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div>
             </div>
-            <div class="text-[12px] sm:text-[14px] neon-text-cyan font-bold tracking-widest mt-2 uppercase text-right">
+            <div class="text-[12px] sm:text-[14px] neon-text-cyan font-bold tracking-widest mt-1 uppercase text-right">
                 ◈ <span id="credits" class="text-white text-[13px] sm:text-[16px]">100</span>
             </div>
         </div>
@@ -192,7 +192,8 @@
         </div>
     </main>
 
-    <footer class="p-3 sm:p-4 flex justify-between items-center bg-black/60 border-t border-cyan-900/50 backdrop-blur-md z-10 shrink-0">
+    <!-- FOOTER (Tightened Padding) -->
+    <footer class="p-1 sm:p-2 flex justify-between items-center bg-black/60 border-t border-cyan-900/50 backdrop-blur-md z-10 shrink-0">
         <!-- Left Cluster -->
         <div class="flex gap-2 sm:gap-3">
             <div class="control-btn" data-action="flip">
