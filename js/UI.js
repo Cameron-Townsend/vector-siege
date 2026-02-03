@@ -1,4 +1,7 @@
-class UIController {
+/**
+         * MIGRATION: MOVE TO js/UI.js
+         */
+        class UIController {
             constructor(bus) {
                 this.bus = bus;
                 this.elements = {
