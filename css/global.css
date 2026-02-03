@@ -1,4 +1,4 @@
-/* MIGRATION NOTE: Move all CSS below to /css/global.css in your GitHub repository */
+   /* MIGRATION NOTE: Move all CSS below to /css/global.css in your GitHub repository */
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 
         :root {
@@ -35,6 +35,7 @@
             height: 100%;
             display: block;
             background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a12 100%);
+            cursor: crosshair;
         }
 
         .segmented-bar {
