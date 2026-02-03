@@ -3,128 +3,462 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vector Siege | Phase 2: Vertex Engine</title>
+    <title>Vector Siege | Phase 2.2 Gold Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- GITHUB MIGRATION: Link to your external stylesheet -->
     <link rel="stylesheet" href="css/global.css">
 
     <style>
-     
+        /**
+         * MIGRATION: Move all styles inside this block to /css/global.css
+         */
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-magenta: #ff00ff;
+            --neon-orange: #ff8c00;
+            --bg-dark: #0a0a12;
+            --glass-bg: rgba(16, 16, 28, 0.9);
+        }
+        body { 
+            background-color: var(--bg-dark); 
+            color: white; 
+            font-family: 'JetBrains+Mono', monospace; 
+            overflow: hidden; 
+            touch-action: none;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .crt-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); background-size: 100% 3px, 3px 100%; pointer-events: none; z-index: 100; }
+        .neon-text-cyan { text-shadow: 0 0 5px var(--neon-cyan); color: var(--neon-cyan); }
+        .neon-text-magenta { text-shadow: 0 0 5px var(--neon-magenta); color: var(--neon-magenta); }
+        
+        #gameCanvas { width: 100%; height: 100%; display: block; cursor: crosshair; background: #000; }
+
+        .segmented-bar { display: flex; gap: 3px; }
+        .segment { height: 20px; flex: 1; background: rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
+        .segment.active-hp { background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); }
+        .segment.active-heat { background: var(--neon-orange); box-shadow: 0 0 10px var(--neon-orange); }
+
+        .control-btn {
+            width: clamp(50px, 12vw, 70px);
+            height: clamp(50px, 12vw, 70px);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--glass-bg);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            transition: all 0.1s;
+            user-select: none;
+            cursor: pointer;
+        }
+        .control-btn:active { background: rgba(0, 243, 255, 0.2); transform: scale(0.92); }
+        
+        .slot-box { width: clamp(35px, 8vw, 44px); height: clamp(35px, 8vw, 44px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; background: rgba(255, 255, 255, 0.03); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 8px; color: rgba(255, 255, 255, 0.4); }
+
+        .jam-flicker { animation: jamFlicker 0.15s infinite; }
+        @keyframes jamFlicker { 0%, 100% { opacity: 1; color: #ff0000; } 50% { opacity: 0.3; } }
+
+        #debug-console { position: absolute; top: 100px; left: 20px; width: 220px; background: rgba(0, 0, 0, 0.9); border: 1px solid #0f0; font-size: 9px; color: #0f0; padding: 10px; z-index: 200; display: none; pointer-events: auto; }
     </style>
 </head>
-<body class="flex flex-col h-screen select-none">
+<body>
     <div class="crt-overlay"></div>
 
     <!-- TACTICAL HEADER -->
-    <header class="w-full p-4 flex justify-between items-start bg-black/40 border-b border-cyan-900/50 z-10 backdrop-blur-sm">
-        <div class="space-y-2 w-1/3">
-            <div class="flex justify-between text-[11px] uppercase tracking-widest font-bold">
+    <header class="w-full p-2 sm:p-4 flex justify-between items-start bg-black/40 border-b border-cyan-900/50 z-10 backdrop-blur-sm shrink-0">
+        <div class="space-y-1 w-fit max-w-[180px] sm:max-w-[280px]">
+            <div class="flex justify-between text-[11px] sm:text-[13px] uppercase tracking-widest font-bold mb-1">
                 <span class="neon-text-cyan">Hull Integrity</span>
-                <span id="hp-value">5.0 / 5.0</span>
+                <span id="hp-value">5.0</span>
             </div>
             <div id="hull-bar" class="segmented-bar w-full">
-                <div class="segment active-hp"></div>
-                <div class="segment active-hp"></div>
-                <div class="segment active-hp"></div>
-                <div class="segment active-hp"></div>
-                <div class="segment active-hp"></div>
+                <div class="segment active-hp"></div><div class="segment active-hp"></div><div class="segment active-hp"></div><div class="segment active-hp"></div><div class="segment active-hp"></div>
             </div>
-            <div class="flex gap-4 mt-1">
-                <div class="text-[12px] font-bold text-cyan-400">WAVE: <span id="wave-num" class="text-white">01</span></div>
-                <div class="text-[12px] font-bold text-cyan-400">POINTS: <span id="points" class="text-white">00000</span></div>
+            <div class="flex gap-4 mt-2 font-bold uppercase tracking-tight">
+                <div class="text-[12px] sm:text-[14px] text-cyan-400">Wave: <span id="wave-num" class="text-white text-[13px] sm:text-[16px]">01</span></div>
+                <div class="text-[12px] sm:text-[14px] text-cyan-400">Points: <span id="points" class="text-white text-[13px] sm:text-[16px]">00000</span></div>
             </div>
         </div>
 
-        <div class="w-1/4 text-center">
-            <div id="status-alert" class="text-[11px] font-bold tracking-tighter opacity-80 uppercase">
-                Systems: Nominal
-            </div>
-            <div id="countdown" class="text-2xl font-bold tracking-tighter neon-text-magenta">SECURE ORIGIN</div>
+        <div class="flex-1 text-center px-4 overflow-hidden">
+            <div id="status-alert" class="text-[11px] sm:text-[13px] font-bold tracking-[0.2em] opacity-80 uppercase mb-1 truncate">Systems: Nominal</div>
+            <div id="countdown" class="text-2xl sm:text-4xl font-bold tracking-tighter neon-text-magenta leading-none mb-1 whitespace-nowrap">SECURE ORIGIN</div>
+            <div id="current-strata" class="text-[10px] sm:text-[12px] neon-text-cyan font-bold tracking-widest uppercase">Strata: Upper</div>
         </div>
 
-        <div class="space-y-2 w-1/3 text-right">
-            <div class="flex justify-between text-[11px] uppercase tracking-widest font-bold">
+        <div class="space-y-1 w-fit max-w-[180px] sm:max-w-[280px] text-right">
+            <div class="flex justify-end items-center text-[11px] sm:text-[13px] uppercase tracking-widest font-bold mb-1">
                 <span id="heat-label">Weapon Temp</span>
-                <span id="heat-value">0%</span>
+                <span id="heat-value" class="inline-block text-right min-w-[50px] ml-4">0%</span>
             </div>
             <div id="heat-bar" class="segmented-bar w-full flex-row-reverse">
-                <div class="segment"></div><div class="segment"></div><div class="segment"></div>
-                <div class="segment"></div><div class="segment"></div><div class="segment"></div>
-                <div class="segment"></div><div class="segment"></div><div class="segment"></div>
-                <div class="segment"></div>
+                <div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div><div class="segment"></div>
             </div>
-            <div class="text-[13px] neon-text-cyan font-bold tracking-widest mt-1">CREDITS: <span id="credits" class="text-white">100</span></div>
+            <div class="text-[12px] sm:text-[14px] neon-text-cyan font-bold tracking-widest mt-2 uppercase text-right">
+                ◈ <span id="credits" class="text-white text-[13px] sm:text-[16px]">100</span>
+            </div>
         </div>
     </header>
 
-    <!-- GAMEPLAY VIEWPORT -->
     <main class="flex-grow relative overflow-hidden bg-black">
         <canvas id="gameCanvas"></canvas>
-        <div id="jam-warning" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-red-500 font-bold text-4xl italic tracking-tighter jam-flicker">
-            HARDWARE JAM
+        
+        <div id="debug-console">
+            <div class="font-bold border-b border-green-900 mb-2 pb-1 uppercase text-xs">Tactical Override</div>
+            <div id="debug-stats">DPI: 1 | Logic: 100x60</div>
+            <button id="debug-heat-spike" class="block w-full text-left hover:bg-green-900 px-1 mt-2">Heat 100%</button>
+            <button id="debug-clear-heat" class="block w-full text-left hover:bg-green-900 px-1">Heat 0%</button>
+            <button id="debug-system-failure" class="block w-full text-left hover:bg-red-900 px-1 text-red-400 font-bold mt-1">TEST SYSTEM FAILURE</button>
+            <button id="debug-activate-shield" class="block w-full text-left hover:bg-green-900 px-1">Trigger Shield</button>
+            <button id="debug-activate-regen" class="block w-full text-left hover:bg-green-900 px-1">Trigger Regen</button>
+            <button id="debug-activate-cooling" class="block w-full text-left hover:bg-green-900 px-1">Trigger Cooling</button>
+            <div class="mt-2 text-[8px] opacity-50">AudioCtx: <span id="debug-audio-status">Suspended</span></div>
+            <div class="mt-2 text-[8px] opacity-50 italic">ESC to Close</div>
         </div>
     </main>
 
-    <!-- SYMMETRICAL CONTROL DECK -->
-    <footer class="p-4 flex justify-between items-center bg-black/60 border-t border-cyan-900/50 backdrop-blur-md z-10">
-        <div class="flex gap-3">
-            <div class="control-btn" data-action="flip" title="Strata Flip">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-cyan">
-                    <path d="M7 10l5-5 5 5M7 14l5 5 5-5"/>
-                </svg>
+    <footer class="p-3 sm:p-4 flex justify-between items-center bg-black/60 border-t border-cyan-900/50 backdrop-blur-md z-10 shrink-0">
+        <div class="flex gap-2 sm:gap-3">
+            <div class="control-btn" data-action="flip"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-cyan"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"/></svg></div>
+            <div class="control-btn" data-action="fire"><div class="w-6 h-6 rounded-full border-2 border-cyan-400 flex items-center justify-center"><div class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_10px_cyan]"></div></div></div>
+            <div class="control-btn" data-action="laser"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-magenta"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8M8 12h8"></path></svg></div>
+        </div>
+        
+        <div class="flex flex-col items-center gap-1 sm:gap-2">
+            <div class="flex gap-1 sm:gap-2">
+                <div class="slot-box border-cyan-500/30 text-cyan-300">W1</div>
+                <div class="slot-box text-white/20">W2</div>
+                <div class="slot-box text-white/20">W3</div>
             </div>
-            <div class="control-btn" data-action="fire" title="Primary Fire">
-                <div class="w-8 h-8 rounded-full border-2 border-cyan-400 flex items-center justify-center">
-                    <div class="w-4 h-4 rounded-full bg-cyan-400 shadow-[0_0_10_cyan]"></div>
-                </div>
-            </div>
-            <div class="control-btn" data-action="laser" title="Laser Curtain">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-magenta">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 8v8M8 12h8"></path>
-                </svg>
+            <div class="flex gap-1 sm:gap-2">
+                <div class="slot-box border-magenta-500/30 text-magenta-300">I1</div>
+                <div class="slot-box text-white/20">I2</div>
+                <div class="slot-box text-white/20">I3</div>
             </div>
         </div>
 
-        <div class="flex flex-col items-center gap-2">
-            <div class="flex gap-2">
-                <div class="slot-box border-cyan-500/30 text-cyan-300"><span class="slot-label">Wep</span>W1</div>
-                <div class="slot-box"><span class="slot-label">Wep</span>W2</div>
-                <div class="slot-box"><span class="slot-label">Wep</span>W3</div>
-            </div>
-            <div class="flex gap-2">
-                <div class="slot-box border-magenta-500/30 text-magenta-300"><span class="slot-label">Inv</span>I1</div>
-                <div class="slot-box"><span class="slot-label">Inv</span>I2</div>
-                <div class="slot-box"><span class="slot-label">Inv</span>I3</div>
-            </div>
-        </div>
-
-        <div class="flex gap-3 flex-row-reverse">
-            <div class="control-btn" data-action="flip">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-cyan">
-                    <path d="M7 10l5-5 5 5M7 14l5 5 5-5"/>
-                </svg>
-            </div>
-            <div class="control-btn" data-action="fire">
-                <div class="w-8 h-8 rounded-full border-2 border-cyan-400 flex items-center justify-center">
-                    <div class="w-4 h-4 rounded-full bg-cyan-400 shadow-[0_0_10_cyan]"></div>
-                </div>
-            </div>
-            <div class="control-btn" data-action="laser">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-magenta">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 8v8M8 12h8"></path>
-                </svg>
-            </div>
+        <div class="flex gap-2 sm:gap-3 flex-row-reverse">
+            <div class="control-btn" data-action="flip"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-cyan"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"/></svg></div>
+            <div class="control-btn" data-action="fire"><div class="w-6 h-6 rounded-full border-2 border-cyan-400 flex items-center justify-center"><div class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_10px_cyan]"></div></div></div>
+            <div class="control-btn" data-action="laser"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="neon-text-magenta"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8M8 12h8"></path></svg></div>
         </div>
     </footer>
 
+    <!-- GITHUB MIGRATION: These tags link to the modular JS files -->
+    <!--
     <script src="js/EventBus.js"></script>
+    <script src="js/Audio.js"></script>
+    <script src="js/FX.js"></script>
     <script src="js/Physics.js"></script>
-    <script src="js/Input.js"></script>
     <script src="js/Orchestrator.js"></script>
-    <script src="js/UI.js"></script>
     <script src="js/main.js"></script>
+    -->
+
+    <script>
+        /**
+         * MIGRATION: Move to js/EventBus.js
+         */
+        class EventBus {
+            constructor() { this.events = {}; }
+            on(e, c) { (this.events[e] = this.events[e] || []).push(c); }
+            emit(e, p = {}) { if (this.events[e]) this.events[e].forEach(c => c(p)); }
+        }
+
+        /**
+         * MIGRATION: Move to js/Audio.js
+         */
+        class AudioEngine {
+            constructor(bus) {
+                this.bus = bus; this.ctx = null;
+                this.bus.on('UI_ACTION', d => { if (d.type === 'fire') this.playShoot(); if (d.type === 'flip') this.playFlip(); });
+                this.bus.on('SHATTER', d => this.playShatter());
+            }
+            init() {
+                if (this.ctx) return;
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const statusEl = document.getElementById('debug-audio-status');
+                    if (statusEl) statusEl.innerText = 'Active';
+                } catch(e) {}
+            }
+            playShoot() {
+                if (!this.ctx) return;
+                const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+                o.type = 'square'; o.frequency.setValueAtTime(880, this.ctx.currentTime);
+                o.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.1);
+                g.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+                o.connect(g); g.connect(this.ctx.destination);
+                o.start(); o.stop(this.ctx.currentTime + 0.1);
+            }
+            playFlip() {
+                if (!this.ctx) return;
+                const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+                o.type = 'sine'; o.frequency.setValueAtTime(220, this.ctx.currentTime);
+                o.frequency.linearRampToValueAtTime(440, this.ctx.currentTime + 0.05);
+                g.gain.setValueAtTime(0.02, this.ctx.currentTime);
+                o.connect(g); g.connect(this.ctx.destination);
+                o.start(); o.stop(this.ctx.currentTime + 0.05);
+            }
+            playShatter() {
+                if (!this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 0.1, buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate), data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const n = this.ctx.createBufferSource(); n.buffer = buffer;
+                const f = this.ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 2000;
+                const g = this.ctx.createGain(); g.gain.setValueAtTime(0.03, this.ctx.currentTime);
+                n.connect(f); f.connect(g); g.connect(this.ctx.destination);
+                n.start(); n.stop(this.ctx.currentTime + 0.1);
+            }
+        }
+
+        /**
+         * MIGRATION: Move to js/FX.js
+         */
+        class ParticleSystem {
+            constructor() { this.particles = []; }
+            spawn(x, y, color, count = 15) {
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({ x, y, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6, life: 1.0, color });
+                }
+            }
+            update(dt) {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i]; p.x += p.vx; p.y += p.vy; p.life -= dt * 3.0;
+                    if (p.life <= 0) this.particles.splice(i, 1);
+                }
+            }
+            draw(ctx) {
+                this.particles.forEach(p => { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - 1, p.y - 1, 2, 2); });
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        /**
+         * MIGRATION: Move to js/Physics.js
+         */
+        class Projectile {
+            constructor(origin, h, k, type = 'standard') {
+                this.h = h; this.k = k; this.type = type;
+                this.distTraveled = 0; this.speed = type === 'slag' ? 40 : 65; 
+                this.active = true; this.totalLength = 0;
+                this.points = this.precalculate();
+            }
+            precalculate() {
+                const pts = []; const denom = Math.pow(50 - this.h, 2); const a = denom === 0 ? 0 : -this.k / denom;
+                const dir = this.h >= 50 ? 1 : -1; const xEnd = (2 * this.h) - 50; const xDistTotal = Math.abs(xEnd - 50);
+                let lastX = 50, lastY = 0, cumulativeDist = 0; const steps = 300; const stepSize = xDistTotal / steps;
+                for (let i = 0; i <= steps; i++) {
+                    const x = 50 + (i * stepSize * dir); const y = a * Math.pow(x - this.h, 2) + this.k;
+                    cumulativeDist += Math.sqrt(Math.pow(x - lastX, 2) + Math.pow(y - lastY, 2));
+                    pts.push({ x, y, d: cumulativeDist }); lastX = x; lastY = y;
+                }
+                this.totalLength = cumulativeDist; return pts;
+            }
+            update(dt) {
+                this.distTraveled += dt * this.speed;
+                if (this.distTraveled >= this.totalLength) this.active = false;
+            }
+            getCurrentPos() {
+                const target = this.distTraveled; let low = 0, high = this.points.length - 1;
+                while (low <= high) {
+                    let mid = (low + high) >> 1;
+                    if (this.points[mid].d < target) low = mid + 1; else high = mid - 1;
+                }
+                return this.points[low] || this.points[this.points.length - 1] || { x: 50, y: 0 };
+            }
+        }
+
+        /**
+         * MIGRATION: Move to js/Physics.js
+         */
+        class PhysicsEngine {
+            constructor(bus) {
+                this.bus = bus; this.projectiles = []; this.lastH = 65; this.lastK = 15;
+                this.heat = 0; this.isJammed = false; this.strataMode = 1; this.lockPeak = false;
+                this.buffers = { shield: { time: 0, max: 10 }, regen: { time: 0, max: 10 }, cooling: { time: 0, max: 10 } };
+                
+                this.bus.on('INPUT_INTERACTION', d => {
+                    let targetH = d.h; if (Math.abs(50 - targetH) < 8) targetH = 50 + (targetH >= 50 ? 8 : -8);
+                    this.lastH = targetH;
+                    if ((this.strataMode === 1 && d.k > 0) || (this.strataMode === -1 && d.k < 0)) this.lockPeak = false;
+                    if (!this.lockPeak) this.lastK = this.strataMode === 1 ? Math.max(2, d.k) : Math.min(-2, d.k);
+                });
+                this.bus.on('UI_ACTION', d => { if (d.type === 'fire') this.fire(); if (d.type === 'flip') this.flipStrata(); });
+                this.bus.on('BUFF_ACTIVATE', d => {
+                    if (this.buffers[d.type]) { this.buffers[d.type].time = d.duration || 10; this.buffers[d.type].max = this.buffers[d.type].time; }
+                });
+            }
+            flipStrata() {
+                this.strataMode *= -1; this.lockPeak = true;
+                this.lastK = Math.max(2, Math.abs(this.lastK)) * this.strataMode;
+                this.bus.emit('STRATA_FLIP', { mode: this.strataMode });
+            }
+            fire() {
+                let h = this.lastH, k = this.lastK;
+                if (this.isJammed) { h += (Math.random() - 0.5) * 40; k += (Math.random() - 0.5) * 20; }
+                this.projectiles.push(new Projectile({x: 50, y: 0}, h, k, this.isJammed ? 'slag' : 'standard'));
+                if (!this.isJammed) {
+                    const heatMod = this.buffers.cooling.time > 0 ? 0.5 : 1.0;
+                    this.heat = Math.min(100, this.heat + (12 * heatMod));
+                    if (this.heat >= 100) { this.isJammed = true; this.bus.emit('JAM_STATE', { active: true }); }
+                    this.bus.emit('HEAT_UPDATE', { heat: this.heat });
+                }
+            }
+            update(dt) {
+                const coolRate = this.buffers.cooling.time > 0 ? 32 : 12;
+                if (this.heat > 0) {
+                    this.heat -= dt * (this.isJammed ? 16 : coolRate);
+                    if (this.isJammed && this.heat <= 0) { this.isJammed = false; this.bus.emit('JAM_STATE', { active: false }); }
+                    if (this.heat < 0) this.heat = 0;
+                    this.bus.emit('HEAT_UPDATE', { heat: this.heat });
+                }
+                for (let key in this.buffers) { if (this.buffers[key].time > 0) { this.buffers[key].time -= dt; if (this.buffers[key].time < 0) this.buffers[key].time = 0; } }
+                this.projectiles.forEach((p, i) => {
+                    p.update(dt);
+                    if (!p.active) { this.bus.emit('SHATTER', { x: p.points[p.points.length-1].x, y: 0, k: p.k }); this.projectiles.splice(i, 1); }
+                });
+            }
+        }
+
+        /**
+         * MIGRATION: Move to js/Orchestrator.js
+         */
+        class Orchestrator {
+            constructor(canvas, bus, physics, audio, particles) {
+                this.canvas = canvas; this.ctx = canvas.getContext('2d');
+                this.bus = bus; this.physics = physics; this.audio = audio; this.particles = particles;
+                this.lastTime = 0; this.shakeAmount = 0; this.dpr = window.devicePixelRatio || 1;
+                window.addEventListener('resize', () => this.resize());
+                this.resize();
+                this.bus.on('SHATTER', d => { const pos = this.toPx(d.x, d.y); this.particles.spawn(pos.x, pos.y, d.k > 0 ? '#00f3ff' : '#ff00ff', 15); });
+                this.bus.on('SCREEN_SHAKE', d => this.shakeAmount = Math.max(this.shakeAmount, d.intensity || 4));
+                requestAnimationFrame(t => this.loop(t));
+            }
+            resize() {
+                const rect = this.canvas.parentElement.getBoundingClientRect();
+                this.canvas.width = rect.width * this.dpr;
+                this.canvas.height = rect.height * this.dpr;
+                this.ctx.scale(this.dpr, this.dpr);
+            }
+            toPx(lx, ly) { 
+                const w = this.canvas.width / this.dpr, h = this.canvas.height / this.dpr;
+                return { x: (lx / 100) * w, y: (1 - ((ly + 30) / 60)) * h }; 
+            }
+            loop(t) {
+                const dt = (t - this.lastTime) / 1000; this.lastTime = t;
+                this.physics.update(dt); this.particles.update(dt);
+                if (this.shakeAmount > 0) this.shakeAmount -= dt * 15;
+                this.draw(); requestAnimationFrame(t => this.loop(t));
+            }
+            draw() {
+                const w = this.canvas.width / this.dpr, h = this.canvas.height / this.dpr, ctx = this.ctx;
+                ctx.clearRect(0, 0, w, h); ctx.save();
+                if (this.shakeAmount > 0) ctx.translate((Math.random()-0.5)*this.shakeAmount, (Math.random()-0.5)*this.shakeAmount);
+                
+                ctx.fillStyle = '#0a0a12'; ctx.fillRect(0, 0, w, h / 2);
+                ctx.fillStyle = '#140a12'; ctx.fillRect(0, h / 2, w, h / 2);
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.05)'; ctx.lineWidth = 1;
+                for(let i=0; i<=100; i+=10) { const p = this.toPx(i, 0); ctx.beginPath(); ctx.moveTo(p.x, 0); ctx.lineTo(p.x, h); ctx.stroke(); }
+                for(let i=-30; i<=30; i+=10) { const p = this.toPx(0, i); ctx.beginPath(); ctx.moveTo(0, p.y); ctx.lineTo(w, p.y); ctx.stroke(); }
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)'; ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
+
+                const origin = this.toPx(50, 0); const rot = Date.now() * 0.001; const coreColor = this.physics.strataMode === 1 ? '#00f3ff' : '#ff00ff';
+                ctx.save(); ctx.translate(origin.x, origin.y);
+                ctx.lineWidth = 2;
+                if (this.physics.buffers.shield.time > 0) {
+                    const p = this.physics.buffers.shield.time / this.physics.buffers.shield.max;
+                    ctx.strokeStyle = 'rgba(0, 255, 100, 0.4)'; ctx.beginPath(); ctx.arc(0, 0, 36, -Math.PI/2, -Math.PI/2 + (Math.PI * 2 * p)); ctx.stroke();
+                }
+                if (this.physics.buffers.regen.time > 0) {
+                    const p = this.physics.buffers.regen.time / this.physics.buffers.regen.max;
+                    ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)'; ctx.beginPath(); ctx.arc(0, 0, 32, -Math.PI/2, -Math.PI/2 + (Math.PI * 2 * p)); ctx.stroke();
+                }
+                if (this.physics.buffers.cooling.time > 0) {
+                    const p = this.physics.buffers.cooling.time / this.physics.buffers.cooling.max;
+                    ctx.strokeStyle = 'rgba(255, 140, 0, 0.4)'; ctx.beginPath(); ctx.arc(0, 0, 28, -Math.PI/2, -Math.PI/2 + (Math.PI * 2 * p)); ctx.stroke();
+                }
+                ctx.rotate(rot); ctx.strokeStyle = coreColor; ctx.lineWidth = 2; ctx.shadowBlur = 15; ctx.shadowColor = coreColor;
+                const drawPoly = (r, sides) => {
+                    ctx.beginPath(); for(let i = 0; i <= sides; i++) { const a = (i / sides) * Math.PI * 2; const px = Math.cos(a) * r, py = Math.sin(a) * r; if(i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+                    ctx.stroke(); ctx.globalAlpha = 0.1; ctx.fill(); ctx.globalAlpha = 1.0;
+                };
+                drawPoly(22, 13); ctx.rotate(-rot * 2.5); ctx.lineWidth = 1; drawPoly(8, 13);
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 1.5, 0, Math.PI*2); ctx.fill();
+                ctx.restore(); ctx.shadowBlur = 0;
+
+                const h_aim = this.physics.lastH, k_aim = this.physics.lastK;
+                const denom = Math.pow(50 - h_aim, 2), a_aim = denom === 0 ? 0 : -k_aim / denom;
+                const peakPos = this.toPx(h_aim, k_aim);
+                ctx.strokeStyle = Math.abs(k_aim) < 6 ? `rgba(255, ${Math.sin(Date.now()*0.01)*128 + 128}, 0, 1)` : (this.physics.strataMode === 1 ? 'var(--neon-cyan)' : 'var(--neon-magenta)');
+                ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(peakPos.x, peakPos.y, 10, 0, Math.PI * 2); ctx.stroke();
+                ctx.beginPath(); ctx.setLineDash([4, 4]); ctx.strokeStyle = this.physics.isJammed ? 'rgba(255,0,0,0.4)' : (this.physics.strataMode === 1 ? 'rgba(0,243,255,0.3)' : 'rgba(255,0,255,0.3)');
+                const xEnd = (2 * h_aim) - 50; const xRange = Math.abs(xEnd - 50), dir = h_aim >= 50 ? 1 : -1;
+                for(let i=0; i<=60; i++) { const lx = 50 + (i / 60 * xRange * dir), ly = a_aim * Math.pow(lx - h_aim, 2) + k_aim, p = this.toPx(lx, ly); if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); }
+                ctx.stroke(); ctx.setLineDash([]);
+                this.physics.projectiles.forEach(p => {
+                    const pos = this.toPx(p.getCurrentPos().x, p.getCurrentPos().y);
+                    ctx.fillStyle = p.type === 'slag' ? '#ff4400' : (p.k > 0 ? '#00f3ff' : '#ff00ff');
+                    ctx.shadowBlur = 10; ctx.shadowColor = ctx.fillStyle; ctx.beginPath(); ctx.arc(pos.x, pos.y, 4, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+                });
+                this.particles.draw(ctx); ctx.restore();
+            }
+        }
+
+        /**
+         * MIGRATION: Move to js/main.js
+         */
+        window.onload = () => {
+            window.bus = new EventBus(); const canvas = document.getElementById('gameCanvas'), audio = new AudioEngine(window.bus);
+            const particles = new ParticleSystem(), physics = new PhysicsEngine(window.bus);
+            const engine = new Orchestrator(canvas, window.bus, physics, audio, particles);
+
+            const handleInteraction = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const cx = e.touches ? e.touches[0].clientX : e.clientX, cy = e.touches ? e.touches[0].clientY : e.clientY;
+                window.bus.emit('INPUT_INTERACTION', { h: ((cx - rect.left) / rect.width) * 100, k: 30 - (((cy - rect.top) / rect.height) * 60) });
+                audio.init(); 
+            };
+            canvas.addEventListener('mousemove', handleInteraction);
+            canvas.addEventListener('mousedown', (e) => { audio.init(); window.bus.emit('UI_ACTION', { type: e.button === 2 ? 'flip' : 'fire' }); });
+            canvas.addEventListener('contextmenu', e => e.preventDefault());
+            document.querySelectorAll('.control-btn').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); audio.init(); window.bus.emit('UI_ACTION', { type: b.dataset.action }); }));
+            
+            window.addEventListener('keydown', e => {
+                if (e.shiftKey && e.key.toLowerCase() === 'd') document.getElementById('debug-console').style.display = document.getElementById('debug-console').style.display === 'block' ? 'none' : 'block';
+                if (e.key === 'Escape') document.getElementById('debug-console').style.display = 'none';
+            });
+            document.getElementById('debug-heat-spike').onclick = () => window.bus.emit('HEAT_UPDATE', {heat: 100});
+            document.getElementById('debug-clear-heat').onclick = () => window.bus.emit('HEAT_UPDATE', {heat: 0});
+            document.getElementById('debug-system-failure').onclick = () => {
+                window.bus.emit('HEAT_UPDATE', {heat: 100}); window.bus.emit('SCREEN_SHAKE', {intensity: 12});
+                const alertEl = document.getElementById('status-alert'), countdownEl = document.getElementById('countdown');
+                if (alertEl) alertEl.innerText = "CRITICAL: SYSTEM FAILURE"; if (countdownEl) countdownEl.innerText = "HARDWARE TERMINATED";
+            };
+            document.getElementById('debug-activate-shield').onclick = () => window.bus.emit('BUFF_ACTIVATE', {type: 'shield', duration: 10});
+            document.getElementById('debug-activate-regen').onclick = () => window.bus.emit('BUFF_ACTIVATE', {type: 'regen', duration: 10});
+            document.getElementById('debug-activate-cooling').onclick = () => window.bus.emit('BUFF_ACTIVATE', {type: 'cooling', duration: 10});
+
+            window.bus.on('HEAT_UPDATE', d => {
+                const valEl = document.getElementById('heat-value'), segs = document.getElementById('heat-bar').children;
+                if (valEl) valEl.innerText = `${Math.floor(d.heat)}%`;
+                for(let i=0; i<segs.length; i++) i < Math.floor(d.heat/10) ? segs[i].classList.add('active-heat') : segs[i].classList.remove('active-heat');
+                if (d.heat >= 100) physics.isJammed = true;
+            });
+            window.bus.on('STRATA_FLIP', d => {
+                const el = document.getElementById('current-strata');
+                if (el) { el.innerText = `Strata: ${d.mode === 1 ? 'Upper' : 'Lower'}`; el.className = `text-[10px] sm:text-[12px] font-bold mb-1 tracking-widest uppercase ${d.mode === 1 ? 'neon-text-cyan' : 'neon-text-magenta'}`; }
+            });
+            window.bus.on('JAM_STATE', d => {
+                const statusEl = document.getElementById('status-alert'), countdownEl = document.getElementById('countdown');
+                if (statusEl) { statusEl.innerText = d.active ? 'Critical: Jammed' : 'Systems: Nominal'; statusEl.classList.toggle('text-red-500', d.active); }
+                if (countdownEl) { countdownEl.innerText = d.active ? "HARDWARE JAM" : "SECURE ORIGIN"; countdownEl.className = `text-2xl sm:text-4xl font-bold tracking-tighter leading-none mb-1 ${d.active ? 'jam-flicker' : 'neon-text-magenta'}`; }
+            });
+        };
+    </script>
 </body>
 </html>
